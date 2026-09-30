@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Camera, Point, Size } from '../types/shape'
 import { clamp } from '../utils/geometry'
+import { DEFAULT_CAMERA, loadDocument } from '../utils/storage'
 
 export const MIN_SCALE = 0.05
 export const MAX_SCALE = 5
@@ -15,7 +16,7 @@ interface Rect {
 }
 
 export function useViewport() {
-  const [camera, setCamera] = useState<Camera>({ x: 0, y: 0, scale: 1 })
+  const [camera, setCamera] = useState<Camera>(() => loadDocument()?.camera ?? DEFAULT_CAMERA)
   const [isSpacePressed, setIsSpacePressed] = useState(false)
   const [isPanning, setIsPanning] = useState(false)
 
@@ -117,6 +118,10 @@ export function useViewport() {
     })
   }, [])
 
+  const resetCamera = useCallback(() => {
+    setCamera(DEFAULT_CAMERA)
+  }, [])
+
   return {
     camera,
     isSpacePressed,
@@ -127,6 +132,7 @@ export function useViewport() {
     scrollBy,
     zoomAt,
     fitBounds,
+    resetCamera,
   }
 }
 

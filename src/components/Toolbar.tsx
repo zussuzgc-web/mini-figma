@@ -8,6 +8,7 @@ interface ToolbarProps {
   canRedo: boolean
   onUndo: () => void
   onRedo: () => void
+  onClear: () => void
 }
 
 export default function Toolbar({
@@ -17,6 +18,7 @@ export default function Toolbar({
   canRedo,
   onUndo,
   onRedo,
+  onClear,
 }: ToolbarProps) {
   return (
     <nav className="flex w-20 flex-col items-center gap-1 border-r border-zinc-800 bg-zinc-950 py-3">
@@ -57,7 +59,15 @@ export default function Toolbar({
           disabled={!canRedo}
           className="h-9 w-12 rounded-md bg-zinc-900 text-sm text-zinc-300 transition-colors enabled:hover:bg-zinc-800 disabled:text-zinc-700"
         >
-          ↷
+            ↷
+          </button>
+        <button
+          type="button"
+          title="Clear canvas"
+          onClick={onClear}
+          className="h-9 w-12 rounded-md bg-zinc-900 text-xs text-zinc-300 transition-colors hover:bg-zinc-800"
+        >
+          Clear
         </button>
       </div>
     </nav>

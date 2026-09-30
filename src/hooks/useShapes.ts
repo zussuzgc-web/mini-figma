@@ -1,12 +1,25 @@
 import { useCallback, useRef, useState } from 'react'
 import type { Point, Shape, ShapeType, Size } from '../types/shape'
 import { rectFromPoints, subPoints } from '../utils/geometry'
+import { loadDocument } from '../utils/storage'
 
 let idCounter = 0
 
 function nextId(): string {
   idCounter += 1
   return `shape-${idCounter}`
+}
+
+/**
+ * Restored shapes already carry their ids, so the counter has to jump past them:
+ * otherwise the first new shape would reuse an id and break hit-testing.
+ */
+export function bumpIdCounter(shapes: Shape[]): number {
+  for (const shape of shapes) {
+    const parsed = Number(shape.id.replace(/^shape-/, ''))
+    if (Number.isInteger(parsed) && parsed > idCounter) idCounter = parsed
+  }
+  return idCounter
 }
 
 export const DRAFT_ID = '__draft__'
@@ -46,7 +59,11 @@ function defaultName(type: ShapeType): string | undefined {
 }
 
 export function useShapes() {
-  const [shapes, setShapes] = useState<Shape[]>([])
+  const [shapes, setShapes] = useState<Shape[]>(() => {
+    const restored = loadDocument()?.shapes ?? []
+    bumpIdCounter(restored)
+    return restored
+  })
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [draft, setDraft] = useState<Shape | null>(null)
   const [canUndo, setCanUndo] = useState(false)
@@ -250,6 +267,17 @@ export function useShapes() {
     moveRef.current = null
   }, [])
 
+  const clearAll = useCallback((): void => {
+    pastRef.current = []
+    futureRef.current = []
+    moveRef.current = null
+    draftRef.current = null
+    setDraft(null)
+    setShapes([])
+    setSelectedId(null)
+    syncHistoryFlags(0, 0)
+  }, [syncHistoryFlags])
+
   return {
     shapes,
     selectedId,
@@ -268,6 +296,7 @@ export function useShapes() {
     endMove,
     undo,
     redo,
+    clearAll,
   }
 }
 

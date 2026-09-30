@@ -1,6 +1,7 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { Point, Tool } from './types/shape'
 import { readImageFile } from './utils/image'
+import { SAVE_DEBOUNCE_MS, clearDocument, saveDocument } from './utils/storage'
 import Canvas from './components/Canvas'
 import Toolbar from './components/Toolbar'
 import PropertiesPanel from './components/PropertiesPanel'
@@ -28,6 +29,7 @@ function App() {
     endMove,
     undo,
     redo,
+    clearAll,
   } = useShapes()
 
   const {
@@ -40,9 +42,23 @@ function App() {
     scrollBy,
     zoomAt,
     fitBounds,
+    resetCamera,
   } = useViewport()
 
   const [activeTool, setActiveTool] = useState<Tool>('select')
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      saveDocument({ shapes, camera })
+    }, SAVE_DEBOUNCE_MS)
+    return () => window.clearTimeout(timer)
+  }, [shapes, camera])
+
+  const onClear = useCallback(() => {
+    clearDocument()
+    clearAll()
+    resetCamera()
+  }, [clearAll, resetCamera])
 
   const selectTool = useCallback(
     (tool: Tool) => {
@@ -86,6 +102,7 @@ function App() {
         canRedo={canRedo}
         onUndo={undo}
         onRedo={redo}
+        onClear={onClear}
       />
 
       <main className="relative flex-1">

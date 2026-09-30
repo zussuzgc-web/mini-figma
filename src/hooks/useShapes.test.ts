@@ -1,12 +1,21 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
-import { useShapes } from './useShapes'
+import { bumpIdCounter, useShapes } from './useShapes'
+import { STORAGE_KEY } from '../utils/storage'
 import type { Shape } from '../types/shape'
 
 type Shapes = ReturnType<typeof useShapes>
 type Handle = { current: Shapes }
 
 const SRC = 'data:image/png;base64,AAA'
+
+beforeEach(() => {
+  localStorage.clear()
+})
+
+afterEach(() => {
+  vi.resetModules()
+})
 
 /** act() не возвращает значение колбэка, поэтому created выносим наружу. */
 function addRect(result: Handle, x = 0, y = 0): Shape {
@@ -23,6 +32,21 @@ function drawFrame(result: Handle): Shape {
   act(() => result.current.updateDrawing({ x: 200, y: 200 }))
   act(() => result.current.endDrawing())
   return result.current.shapes[0]
+}
+
+function makeShape(id: string): Shape {
+  return {
+    id,
+    type: 'rectangle',
+    x: 0,
+    y: 0,
+    width: 100,
+    height: 50,
+    fill: '#60a5fa',
+    stroke: null,
+    strokeWidth: 0,
+    parentId: null,
+  }
 }
 
 describe('useShapes: добавление', () => {
@@ -206,6 +230,54 @@ describe('useShapes: рисование', () => {
     expect(result.current.shapes).toHaveLength(1)
     expect(result.current.shapes[0]).toMatchObject({ x: 5, y: 5, width: 35, height: 20 })
     expect(result.current.selectedId).toBe(result.current.shapes[0].id)
+  })
+})
+
+describe('useShapes: восстановление из хранилища', () => {
+  it('поднимает счётчик id выше восстановленных, чтобы не выдать занятый', () => {
+    const ids = ['shape-3', 'shape-17', 'shape-9']
+    expect(bumpIdCounter(ids.map(makeShape))).toBe(17)
+  })
+
+  it('игнорирует идентификаторы произвольного вида', () => {
+    expect(bumpIdCounter([makeShape('imported-from-file')])).toBeGreaterThanOrEqual(0)
+  })
+
+  it('подхватывает сохранённые фигуры и не переиспользует их id', async () => {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ shapes: [makeShape('shape-12')], camera: { x: 0, y: 0, scale: 1 } }),
+    )
+    vi.resetModules()
+    const fresh = await import('./useShapes')
+    const { result } = renderHook(() => fresh.useShapes())
+
+    expect(result.current.shapes.map((s) => s.id)).toEqual(['shape-12'])
+
+    act(() => {
+      result.current.startDrawing('rectangle', { x: 0, y: 0 })
+      result.current.updateDrawing({ x: 10, y: 10 })
+      result.current.endDrawing()
+    })
+
+    expect(result.current.shapes).toHaveLength(2)
+    expect(result.current.shapes[1].id).not.toBe('shape-12')
+  })
+})
+
+describe('useShapes: очистка', () => {
+  it('удаляет фигуры, историю и выделение', () => {
+    const { result } = renderHook(() => useShapes())
+    addRect(result)
+    expect(result.current.shapes).toHaveLength(1)
+    expect(result.current.canUndo).toBe(true)
+
+    act(() => result.current.clearAll())
+
+    expect(result.current.shapes).toHaveLength(0)
+    expect(result.current.selectedId).toBeNull()
+    expect(result.current.canUndo).toBe(false)
+    expect(result.current.canRedo).toBe(false)
   })
 })
 
