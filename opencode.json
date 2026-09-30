@@ -3,6 +3,6 @@
   "instructions": ["AGENTS.md"],
   "permission": {
     "edit": "allow",
-    "bash": { "git commit*": "allow", "git merge*": "ask", "git push*": "ask", "*": "allow" }
+    "bash": { "*": "allow", "git commit*": "allow", "git merge*": "ask", "git push*": "ask" }
   }
 }
