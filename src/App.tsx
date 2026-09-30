@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react'
 import type { Point, Tool } from './types/shape'
+import { readImageFile } from './utils/image'
 import Canvas from './components/Canvas'
 import Toolbar from './components/Toolbar'
 import PropertiesPanel from './components/PropertiesPanel'
@@ -61,25 +62,9 @@ function App() {
         x: (40 - camera.x) / camera.scale,
         y: (40 - camera.y) / camera.scale,
       }
-      const reader = new FileReader()
-      reader.onerror = () => selectShape(null)
-      reader.onload = () => {
-        const src = reader.result as string
-        const img = new Image()
-        img.onerror = () => selectShape(null)
-        img.onload = () =>
-          insertImage(
-            src,
-            origin,
-            {
-              width: Math.max(40, Math.min(600, img.naturalWidth)),
-              height: Math.max(40, Math.min(600, img.naturalHeight)),
-            },
-            null,
-          )
-        img.src = src
-      }
-      reader.readAsDataURL(file)
+      readImageFile(file)
+        .then(({ src, size }) => insertImage(src, origin, size, null))
+        .catch(() => selectShape(null))
     },
     [camera, insertImage, selectShape],
   )

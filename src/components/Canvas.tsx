@@ -2,7 +2,8 @@ import { useRef } from 'react'
 import type { PointerEvent, WheelEvent } from 'react'
 import type { Camera, Point, Shape, ShapeType, Size, Tool } from '../types/shape'
 import { DRAFT_ID } from '../hooks/useShapes'
-import { clamp, screenToCanvas } from '../utils/geometry'
+import { screenToCanvas } from '../utils/geometry'
+import { readImageFile } from '../utils/image'
 
 interface CanvasProps {
   camera: Camera
@@ -50,8 +51,6 @@ function unionBounds(shapes: Shape[]): Rect | null {
   return { x: minX, y: minY, width: Math.max(maxX - minX, 1), height: Math.max(maxY - minY, 1) }
 }
 
-const MAX_IMAGE_EDGE = 600
-
 function contains(shape: Shape, point: Point): boolean {
   return (
     point.x >= shape.x &&
@@ -85,28 +84,6 @@ function hitTest(shapes: Shape[], point: Point): Shape | null {
 
 function frameChildren(shapes: Shape[], id: string): Shape[] {
   return shapes.filter((s) => s.parentId === id && s.id !== DRAFT_ID)
-}
-
-function readImageFile(file: File): Promise<{ src: string; size: Size }> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onerror = () => reject(reader.error ?? new Error('read failed'))
-    reader.onload = () => {
-      const src = reader.result as string
-      const img = new Image()
-      img.onerror = () => reject(new Error('decode failed'))
-      img.onload = () =>
-        resolve({
-          src,
-          size: {
-            width: clamp(img.naturalWidth, 40, MAX_IMAGE_EDGE),
-            height: clamp(img.naturalHeight, 40, MAX_IMAGE_EDGE),
-          },
-        })
-      img.src = src
-    }
-    reader.readAsDataURL(file)
-  })
 }
 
 export default function Canvas(props: CanvasProps) {
