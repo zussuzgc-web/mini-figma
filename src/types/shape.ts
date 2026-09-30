@@ -1,6 +1,6 @@
-export type Tool = 'select' | 'rectangle' | 'ellipse'
+export type Tool = 'select' | 'rectangle' | 'ellipse' | 'frame' | 'image'
 
-export type ShapeType = 'rectangle' | 'ellipse'
+export type ShapeType = 'rectangle' | 'ellipse' | 'frame' | 'image'
 
 export interface Point {
   x: number
@@ -28,4 +28,7 @@ export interface Shape {
   fill: string
   stroke: string | null
   strokeWidth: number
+  parentId?: string | null
+  src?: string
+  name?: string
 }

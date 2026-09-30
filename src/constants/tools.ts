@@ -1,21 +1,31 @@
-import type { Tool } from '../types/shape'
+import type { Tool, ShapeType } from '../types/shape'
 
-export interface ToolDefinition {
+export interface ToolDef {
   id: Tool
   label: string
+  icon: string
   hotkey: string
 }
 
-export const TOOLS: Record<Tool, ToolDefinition> = {
-  select: { id: 'select', label: 'Move', hotkey: 'V' },
-  rectangle: { id: 'rectangle', label: 'Rectangle', hotkey: 'R' },
-  ellipse: { id: 'ellipse', label: 'Ellipse', hotkey: 'O' },
-}
-
-export const TOOL_ORDER: Tool[] = ['select', 'rectangle', 'ellipse']
+export const TOOLS: ToolDef[] = [
+  { id: 'select', label: 'Move', icon: '↖', hotkey: 'V' },
+  { id: 'frame', label: 'Frame', icon: '▣', hotkey: 'F' },
+  { id: 'rectangle', label: 'Rectangle', icon: '▭', hotkey: 'R' },
+  { id: 'ellipse', label: 'Ellipse', icon: '◯', hotkey: 'O' },
+  { id: 'image', label: 'Image', icon: '▨', hotkey: 'I' },
+]
 
 export const TOOL_HOTKEYS: Record<string, Tool> = {
   v: 'select',
+  f: 'frame',
   r: 'rectangle',
   o: 'ellipse',
+  i: 'image',
+}
+
+export const SHAPE_LABELS: Record<ShapeType, string> = {
+  frame: 'Frame',
+  rectangle: 'Rectangle',
+  ellipse: 'Ellipse',
+  image: 'Image',
 }

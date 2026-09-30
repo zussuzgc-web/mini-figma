@@ -1,7 +1,15 @@
-import type { Camera, Point } from '../types/shape'
+import type { Camera, Point, Size } from '../types/shape'
 
 export function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value))
+}
+
+export function subPoints(a: Point, b: Point): Point {
+  return { x: a.x - b.x, y: a.y - b.y }
+}
+
+export function addPoints(a: Point, b: Point): Point {
+  return { x: a.x + b.x, y: a.y + b.y }
 }
 
 export function screenToCanvas(screen: Point, camera: Camera): Point {
@@ -18,7 +26,7 @@ export function canvasToScreen(canvas: Point, camera: Camera): Point {
   }
 }
 
-export function rectFromPoints(a: Point, b: Point) {
+export function rectFromPoints(a: Point, b: Point): { x: number; y: number; width: number; height: number } {
   return {
     x: Math.min(a.x, b.x),
     y: Math.min(a.y, b.y),
@@ -27,9 +35,10 @@ export function rectFromPoints(a: Point, b: Point) {
   }
 }
 
-export function subPoints(a: Point, b: Point): Point {
+export function fitImage(container: Size, image: Size): Size {
+  const ratio = Math.min(container.width / image.width, container.height / image.height)
   return {
-    x: a.x - b.x,
-    y: a.y - b.y,
+    width: Math.round(image.width * ratio),
+    height: Math.round(image.height * ratio),
   }
 }

@@ -2,62 +2,38 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Camera, Point, Size } from '../types/shape'
 import { clamp } from '../utils/geometry'
 
-export const MIN_ZOOM = 0.1
-export const MAX_ZOOM = 4
+export const MIN_SCALE = 0.05
+export const MAX_SCALE = 5
+
+const FIT_PADDING = 80
+
+interface Rect {
+  x: number
+  y: number
+  width: number
+  height: number
+}
 
 export function useViewport() {
   const [camera, setCamera] = useState<Camera>({ x: 0, y: 0, scale: 1 })
-  const [isPanning, setIsPanning] = useState(false)
   const [isSpacePressed, setIsSpacePressed] = useState(false)
+  const [isPanning, setIsPanning] = useState(false)
 
+  const cameraRef = useRef(camera)
+  cameraRef.current = camera
   const spaceRef = useRef(false)
-  const panningRef = useRef(false)
-  const lastPointRef = useRef<Point | null>(null)
+  const panRef = useRef<{ start: Point; cam: Camera } | null>(null)
 
   const endPan = useCallback(() => {
-    panningRef.current = false
-    lastPointRef.current = null
+    panRef.current = null
     setIsPanning(false)
-  }, [])
-
-  const beginPan = useCallback((point: Point) => {
-    if (!spaceRef.current) return
-    lastPointRef.current = point
-    panningRef.current = true
-    setIsPanning(true)
-  }, [])
-
-  const panTo = useCallback((point: Point) => {
-    const last = lastPointRef.current
-    if (!panningRef.current || !last) return
-    setCamera((c) => ({
-      ...c,
-      x: c.x + (point.x - last.x),
-      y: c.y + (point.y - last.y),
-    }))
-    lastPointRef.current = point
-  }, [])
-
-  const zoomAt = useCallback((point: Point, factor: number) => {
-    setCamera((c) => {
-      const scale = clamp(c.scale * factor, MIN_ZOOM, MAX_ZOOM)
-      const ratio = scale / c.scale
-      return {
-        scale,
-        x: point.x - (point.x - c.x) * ratio,
-        y: point.y - (point.y - c.y) * ratio,
-      }
-    })
-  }, [])
-
-  const centerOn = useCallback((size: Size) => {
-    setCamera({ x: size.width / 2, y: size.height / 2, scale: 1 })
   }, [])
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.code !== 'Space') return
       e.preventDefault()
+      if (spaceRef.current) return
       spaceRef.current = true
       setIsSpacePressed(true)
     }
@@ -83,5 +59,68 @@ export function useViewport() {
     }
   }, [endPan])
 
-  return { camera, isPanning, isSpacePressed, beginPan, panTo, endPan, zoomAt, centerOn }
+  const beginPan = useCallback((point: Point) => {
+    panRef.current = { start: point, cam: cameraRef.current }
+    setIsPanning(true)
+  }, [])
+
+  const panTo = useCallback((point: Point) => {
+    const pan = panRef.current
+    if (!pan) return
+    setCamera({
+      ...pan.cam,
+      x: pan.cam.x + (point.x - pan.start.x),
+      y: pan.cam.y + (point.y - pan.start.y),
+    })
+  }, [])
+
+  const scrollBy = useCallback((dx: number, dy: number) => {
+    setCamera((cam) => ({ ...cam, x: cam.x + dx, y: cam.y + dy }))
+  }, [])
+
+  const zoomAt = useCallback((screenPoint: Point, factor: number) => {
+    setCamera((cam) => {
+      const scale = clamp(cam.scale * factor, MIN_SCALE, MAX_SCALE)
+      const ratio = scale / cam.scale
+      return {
+        scale,
+        x: screenPoint.x - (screenPoint.x - cam.x) * ratio,
+        y: screenPoint.y - (screenPoint.y - cam.y) * ratio,
+      }
+    })
+  }, [])
+
+  const fitBounds = useCallback((bounds: Rect | null, viewport: Size) => {
+    if (!bounds || viewport.width <= 0 || viewport.height <= 0) {
+      setCamera({ x: 0, y: 0, scale: 1 })
+      return
+    }
+    const scale = clamp(
+      Math.min(
+        (viewport.width - FIT_PADDING) / bounds.width,
+        (viewport.height - FIT_PADDING) / bounds.height,
+      ),
+      MIN_SCALE,
+      MAX_SCALE,
+    )
+    setCamera({
+      scale,
+      x: viewport.width / 2 - (bounds.x + bounds.width / 2) * scale,
+      y: viewport.height / 2 - (bounds.y + bounds.height / 2) * scale,
+    })
+  }, [])
+
+  return {
+    camera,
+    isSpacePressed,
+    isPanning,
+    beginPan,
+    panTo,
+    endPan,
+    scrollBy,
+    zoomAt,
+    fitBounds,
+  }
 }
+
+export default useViewport

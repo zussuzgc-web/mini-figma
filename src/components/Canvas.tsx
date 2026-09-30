@@ -1,172 +1,329 @@
-import { useCallback, useEffect, useRef } from 'react'
-import type { Point, Shape, Tool } from '../types/shape'
-import type { useShapes } from '../hooks/useShapes'
-import type { useViewport } from '../hooks/useViewport'
-import { screenToCanvas } from '../utils/geometry'
-import ShapeView from './Shape'
+import { useRef } from 'react'
+import type { PointerEvent, WheelEvent } from 'react'
+import type { Camera, Point, Shape, ShapeType, Size, Tool } from '../types/shape'
+import { DRAFT_ID } from '../hooks/useShapes'
+import { clamp, screenToCanvas } from '../utils/geometry'
 
-const GRID_SIZE = 24
+interface CanvasProps {
+  camera: Camera
+  shapes: Shape[]
+  selectedId: string | null
+  draft: Shape | null
+  activeTool: Tool
+  isSpacePressed: boolean
+  isPanning: boolean
+  selectShape: (id: string | null) => void
+  insertImage: (src: string, origin: Point, size: Size, parentId?: string | null) => Shape
+  startDrawing: (type: ShapeType, origin: Point, parentId?: string | null) => void
+  updateDrawing: (point: Point) => void
+  endDrawing: () => void
+  startMove: (id: string, point: Point) => void
+  moveShape: (point: Point) => void
+  endMove: () => void
+  beginPan: (point: Point) => void
+  panTo: (point: Point) => void
+  endPan: () => void
+  scrollBy: (dx: number, dy: number) => void
+  zoomAt: (point: Point, factor: number) => void
+  onFitAll: (bounds: Rect | null, viewport: Size) => void
+}
+
+interface Rect {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+function unionBounds(shapes: Shape[]): Rect | null {
+  if (shapes.length === 0) return null
+  let minX = Infinity
+  let minY = Infinity
+  let maxX = -Infinity
+  let maxY = -Infinity
+  for (const s of shapes) {
+    minX = Math.min(minX, s.x)
+    minY = Math.min(minY, s.y)
+    maxX = Math.max(maxX, s.x + s.width)
+    maxY = Math.max(maxY, s.y + s.height)
+  }
+  return { x: minX, y: minY, width: Math.max(maxX - minX, 1), height: Math.max(maxY - minY, 1) }
+}
+
+const MAX_IMAGE_EDGE = 600
+
+function contains(shape: Shape, point: Point): boolean {
+  return (
+    point.x >= shape.x &&
+    point.x <= shape.x + shape.width &&
+    point.y >= shape.y &&
+    point.y <= shape.y + shape.height
+  )
+}
+
+/** Shapes whose whole ancestor chain also contains the point, i.e. actually visible under that point. */
+function visibleAt(shapes: Shape[], point: Point): Shape[] {
+  const byId = new Map(shapes.map((s) => [s.id, s]))
+  return shapes.filter((s) => {
+    let cursor = s.parentId
+    while (cursor) {
+      const parent = byId.get(cursor)
+      if (!parent || !contains(parent, point)) return false
+      cursor = parent.parentId ?? null
+    }
+    return true
+  })
+}
 
 function hitTest(shapes: Shape[], point: Point): Shape | null {
-  for (let i = shapes.length - 1; i >= 0; i -= 1) {
-    const s = shapes[i]
-    if (point.x >= s.x && point.x <= s.x + s.width && point.y >= s.y && point.y <= s.y + s.height) {
-      return s
-    }
+  const candidates = visibleAt(shapes, point)
+  for (let i = candidates.length - 1; i >= 0; i -= 1) {
+    if (contains(candidates[i], point)) return candidates[i]
   }
   return null
 }
 
-interface CanvasProps {
-  viewport: ReturnType<typeof useViewport>
-  shapes: ReturnType<typeof useShapes>
-  activeTool: Tool
+function frameChildren(shapes: Shape[], id: string): Shape[] {
+  return shapes.filter((s) => s.parentId === id && s.id !== DRAFT_ID)
 }
 
-function Canvas({ viewport, shapes, activeTool }: CanvasProps) {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const { camera, isPanning, isSpacePressed, beginPan, panTo, endPan, zoomAt, centerOn } = viewport
+function readImageFile(file: File): Promise<{ src: string; size: Size }> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onerror = () => reject(reader.error ?? new Error('read failed'))
+    reader.onload = () => {
+      const src = reader.result as string
+      const img = new Image()
+      img.onerror = () => reject(new Error('decode failed'))
+      img.onload = () =>
+        resolve({
+          src,
+          size: {
+            width: clamp(img.naturalWidth, 40, MAX_IMAGE_EDGE),
+            height: clamp(img.naturalHeight, 40, MAX_IMAGE_EDGE),
+          },
+        })
+      img.src = src
+    }
+    reader.readAsDataURL(file)
+  })
+}
+
+export default function Canvas(props: CanvasProps) {
   const {
+    camera,
+    shapes,
+    selectedId,
     draft,
+    activeTool,
+    isSpacePressed,
+    isPanning,
     selectShape,
+    insertImage,
     startDrawing,
     updateDrawing,
     endDrawing,
     startMove,
     moveShape,
     endMove,
-  } = shapes
+    beginPan,
+    panTo,
+    endPan,
+    scrollBy,
+    zoomAt,
+    onFitAll,
+  } = props
 
-  useEffect(() => {
-    const el = containerRef.current
-    if (!el) return
-    const measure = () => {
-      const rect = el.getBoundingClientRect()
-      centerOn({ width: rect.width, height: rect.height })
+  const surfaceRef = useRef<HTMLDivElement | null>(null)
+
+  const toCanvas = (e: { clientX: number; clientY: number }): { screen: Point; canvas: Point } => {
+    const surface = surfaceRef.current
+    const rect = surface?.getBoundingClientRect()
+    const screen: Point = rect
+      ? { x: e.clientX - rect.left, y: e.clientY - rect.top }
+      : { x: e.clientX, y: e.clientY }
+    return { screen, canvas: screenToCanvas(screen, camera) }
+  }
+
+  const pickParent = (point: Point): string | null => {
+    const hit = hitTest(shapes, point)
+    if (hit && hit.type === 'frame') return hit.id
+    return hit?.parentId ?? null
+  }
+
+  const placeImage = (point: Point, parentId: string | null) => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = 'image/*'
+    input.onchange = () => {
+      const file = input.files?.[0]
+      if (!file) return
+      void readImageFile(file).then(
+        ({ src, size }) => insertImage(src, point, size, parentId),
+        () => undefined,
+      )
     }
-    measure()
-    const observer = new ResizeObserver(measure)
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [centerOn])
+    input.click()
+  }
 
-  useEffect(() => {
-    const el = containerRef.current
-    if (!el) return
-    const handleWheel = (e: WheelEvent) => {
-      e.preventDefault()
-      const rect = el.getBoundingClientRect()
-      const point = { x: e.clientX - rect.left, y: e.clientY - rect.top }
-      zoomAt(point, Math.exp(-e.deltaY * 0.0015))
+  const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
+    const surface = surfaceRef.current
+    if (!surface || e.button > 1) return
+    surface.setPointerCapture(e.pointerId)
+    const { screen, canvas } = toCanvas(e)
+
+    if (isSpacePressed || e.button === 1) {
+      beginPan(screen)
+      return
     }
-    el.addEventListener('wheel', handleWheel, { passive: false })
-    return () => el.removeEventListener('wheel', handleWheel)
-  }, [zoomAt])
 
-  useEffect(() => {
-    const end = () => {
-      endPan()
-      endDrawing()
-      endMove()
+    if (activeTool === 'image') {
+      placeImage(canvas, pickParent(canvas))
+      return
     }
-    window.addEventListener('pointerup', end)
-    window.addEventListener('blur', end)
-    return () => {
-      window.removeEventListener('pointerup', end)
-      window.removeEventListener('blur', end)
-    }
-  }, [endPan, endDrawing, endMove])
 
-  const getLocalPoint = useCallback((e: { clientX: number; clientY: number }): Point => {
-    const rect = containerRef.current!.getBoundingClientRect()
-    return { x: e.clientX - rect.left, y: e.clientY - rect.top }
-  }, [])
-
-  const handleMouseDown = useCallback(
-    (e: React.MouseEvent) => {
-      if (e.button !== 0) return
-      const local = getLocalPoint(e)
-      if (isSpacePressed) {
-        beginPan(local)
-        return
+    if (activeTool === 'select') {
+      const hit = hitTest(shapes, canvas)
+      if (hit) {
+        selectShape(hit.id)
+        startMove(hit.id, canvas)
+      } else {
+        selectShape(null)
       }
-      const canvasPoint = screenToCanvas(local, camera)
-      if (activeTool === 'select') {
-        const hit = hitTest(shapes.shapes, canvasPoint)
-        selectShape(hit ? hit.id : null)
-        if (hit) startMove(hit.id, canvasPoint)
-        return
-      }
-      startDrawing(activeTool, canvasPoint)
-    },
-    [getLocalPoint, isSpacePressed, beginPan, camera, activeTool, shapes.shapes, selectShape, startMove, startDrawing],
-  )
+      return
+    }
 
-  const handleMouseMove = useCallback(
-    (e: React.MouseEvent) => {
-      const local = getLocalPoint(e)
-      panTo(local)
-      if (!isSpacePressed) {
-        const canvasPoint = screenToCanvas(local, camera)
-        updateDrawing(canvasPoint)
-        moveShape(canvasPoint)
-      }
-    },
-    [getLocalPoint, panTo, isSpacePressed, updateDrawing, moveShape, camera],
-  )
+    startDrawing(activeTool, canvas, pickParent(canvas))
+  }
 
-  const gridSize = GRID_SIZE * camera.scale
-  const cursor = isSpacePressed
-    ? isPanning
-      ? 'grabbing'
-      : 'grab'
-    : activeTool === 'select'
-      ? 'default'
-      : 'crosshair'
+  const onPointerMove = (e: PointerEvent<HTMLDivElement>) => {
+    const { screen, canvas } = toCanvas(e)
+    if (isPanning) {
+      panTo(screen)
+    } else if (activeTool === 'select') {
+      moveShape(canvas)
+    } else {
+      updateDrawing(canvas)
+    }
+  }
+
+  const onPointerUp = () => {
+    endPan()
+    if (activeTool === 'select') endMove()
+    else endDrawing()
+  }
+
+  const onWheel = (e: WheelEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    const { screen } = toCanvas(e)
+    if (e.shiftKey) {
+      scrollBy(-e.deltaY, 0)
+      return
+    }
+    zoomAt(screen, Math.exp(-e.deltaY * 0.001))
+  }
+
+  const onDoubleClick = () => {
+    const rect = surfaceRef.current?.getBoundingClientRect()
+    if (!rect) return
+    onFitAll(unionBounds(shapes.filter((s) => !s.parentId)), { width: rect.width, height: rect.height })
+  }
+
+  const px = 1 / camera.scale
+
+  const renderShape = (shape: Shape, originX: number, originY: number) => {
+    const left = (shape.x - originX) * camera.scale
+    const top = (shape.y - originY) * camera.scale
+    const width = shape.width * camera.scale
+    const height = shape.height * camera.scale
+    const selected = shape.id === selectedId
+    const children = frameChildren(shapes, shape.id)
+
+    return (
+      <div key={shape.id} style={{ position: 'absolute', left, top, width, height }}>
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: shape.type === 'image' ? 'transparent' : shape.fill,
+            border: shape.stroke ? `${shape.strokeWidth * px}px solid ${shape.stroke}` : 'none',
+            borderRadius: shape.type === 'ellipse' ? '50%' : shape.type === 'frame' ? 2 : 0,
+            boxSizing: 'border-box',
+            overflow: shape.type === 'frame' ? 'hidden' : 'visible',
+          }}
+        >
+          {shape.type === 'image' && shape.src && (
+            <img
+              src={shape.src}
+              alt={shape.name ?? ''}
+              draggable={false}
+              style={{
+                position: 'absolute',
+                inset: 0,
+                width: '100%',
+                height: '100%',
+                objectFit: 'fill',
+                pointerEvents: 'none',
+              }}
+            />
+          )}
+          {children.map((child) => renderShape(child, shape.x, shape.y))}
+        </div>
+
+        {selected && (
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              border: `${px}px solid #2f80ed`,
+              pointerEvents: 'none',
+            }}
+          />
+        )}
+      </div>
+    )
+  }
+
+  const transform = `translate(${camera.x}px, ${camera.y}px) scale(${camera.scale})`
 
   return (
     <div
-      ref={containerRef}
-      className="absolute inset-0 select-none overflow-hidden"
+      ref={surfaceRef}
+      className="canvas-surface relative h-full w-full overflow-hidden"
       style={{
         backgroundColor: '#18181b',
-        backgroundImage:
-          'linear-gradient(to right, rgba(255,255,255,0.06) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.06) 1px, transparent 1px)',
-        backgroundSize: `${gridSize}px ${gridSize}px`,
-        backgroundPosition: `${camera.x}px ${camera.y}px`,
-        cursor,
+        cursor: isPanning ? 'grabbing' : isSpacePressed ? 'grab' : activeTool === 'select' ? 'default' : 'crosshair',
         touchAction: 'none',
       }}
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerUp}
+      onWheel={onWheel}
+      onDoubleClick={onDoubleClick}
+      title="Double-click — fit all"
     >
-      <div
-        className="absolute inset-0"
-        style={{
-          transform: `translate(${camera.x}px, ${camera.y}px) scale(${camera.scale})`,
-          transformOrigin: '0 0',
-        }}
-      >
-        {shapes.shapes.map((shape) => (
-          <ShapeView
-            key={shape.id}
-            shape={shape}
-            selected={shape.id === shapes.selectedId}
-            scale={camera.scale}
+      <div style={{ position: 'absolute', transformOrigin: '0 0', transform, width: '100%', height: '100%' }}>
+        {shapes
+          .filter((s) => !s.parentId && s.id !== DRAFT_ID)
+          .map((s) => renderShape(s, 0, 0))}
+
+        {draft && (
+          <div
+            style={{
+              position: 'absolute',
+              left: draft.x * camera.scale,
+              top: draft.y * camera.scale,
+              width: draft.width * camera.scale,
+              height: draft.height * camera.scale,
+              border: `${px}px solid #2f80ed`,
+              background: draft.type === 'frame' ? 'rgba(99,102,241,0.08)' : 'rgba(96,165,250,0.15)',
+              boxSizing: 'border-box',
+              pointerEvents: 'none',
+            }}
           />
-        ))}
-        {draft && <ShapeView shape={draft} selected={false} scale={camera.scale} />}
+        )}
       </div>
-      <div className="pointer-events-none absolute bottom-3 right-3 rounded bg-zinc-900/80 px-2 py-1 text-xs text-zinc-400">
-        {Math.round(camera.scale * 100)}%
-      </div>
-      {isSpacePressed && (
-        <div className="pointer-events-none absolute left-3 top-3 rounded bg-zinc-900/80 px-2 py-1 text-xs text-zinc-400">
-          Space — панорамирование
-        </div>
-      )}
     </div>
   )
 }
-
-export default Canvas
