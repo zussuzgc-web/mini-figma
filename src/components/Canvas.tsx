@@ -61,7 +61,7 @@ function contains(shape: Shape, point: Point): boolean {
 }
 
 /** Shapes whose whole ancestor chain also contains the point, i.e. actually visible under that point. */
-function visibleAt(shapes: Shape[], point: Point): Shape[] {
+export function visibleAt(shapes: Shape[], point: Point): Shape[] {
   const byId = new Map(shapes.map((s) => [s.id, s]))
   return shapes.filter((s) => {
     let cursor = s.parentId
@@ -74,7 +74,7 @@ function visibleAt(shapes: Shape[], point: Point): Shape[] {
   })
 }
 
-function hitTest(shapes: Shape[], point: Point): Shape | null {
+export function hitTest(shapes: Shape[], point: Point): Shape | null {
   const candidates = visibleAt(shapes, point)
   for (let i = candidates.length - 1; i >= 0; i -= 1) {
     if (contains(candidates[i], point)) return candidates[i]
