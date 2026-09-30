@@ -222,11 +222,17 @@ export function useShapes() {
       if (!state) return
       if (state.snapshot === null) {
         state.snapshot = shapesRef.current
+        const base = new Map(state.snapshot.map((s) => [s.id, s]))
+        const origin = base.get(state.id)
+        const current = subPoints(point, state.offset)
+        if (!origin || (current.x === origin.x && current.y === origin.y)) return
         pushHistory(state.snapshot)
       }
+      const snapshot = state.snapshot
+      if (!snapshot) return
       const next = subPoints(point, state.offset)
-      const ids = subtreeIds(state.snapshot, state.id)
-      const base = new Map(state.snapshot.map((s) => [s.id, s]))
+      const ids = subtreeIds(snapshot, state.id)
+      const base = new Map(snapshot.map((s) => [s.id, s]))
       const dx = next.x - (base.get(state.id)?.x ?? next.x)
       const dy = next.y - (base.get(state.id)?.y ?? next.y)
       setShapes((prev) =>
