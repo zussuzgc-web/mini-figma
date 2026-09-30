@@ -9,13 +9,6 @@ export function calcTotal(price, qty, discountRate = 0) {
   return Math.round((taxable + vat) * 100) / 100
 }
 
-export function applyLegacyPromoCode(code, subtotal) {
-  const table = { WELCOME10: 0.1, SPRING: 0.15, SUMMER2020: 0.2 }
-  const rate = table[code]
-  if (!rate) return subtotal
-  return Math.round((subtotal - subtotal * rate) * 100) / 100
-}
-
 export async function fetchProduct(id) {
   const response = await fetch(`${API_BASE_URL}/products/${id}`, {
     headers: { Authorization: `Bearer ${API_TOKEN}` },
