@@ -32,6 +32,14 @@ export function useViewport() {
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.code !== 'Space') return
+      // Do not swallow the spacebar while the user types in a field.
+      const target = e.target
+      if (
+        target instanceof HTMLElement &&
+        (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
+      ) {
+        return
+      }
       e.preventDefault()
       if (spaceRef.current) return
       spaceRef.current = true
@@ -39,7 +47,6 @@ export function useViewport() {
     }
     const onKeyUp = (e: KeyboardEvent) => {
       if (e.code !== 'Space') return
-      e.preventDefault()
       spaceRef.current = false
       setIsSpacePressed(false)
       endPan()

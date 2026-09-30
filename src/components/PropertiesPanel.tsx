@@ -82,6 +82,47 @@ function NumberField({
   )
 }
 
+/** Text input with a local draft, so a name edit is one history entry, not one per key. */
+function TextField({
+  label,
+  value,
+  onCommit,
+}: {
+  label: string
+  value: string
+  onCommit: (value: string) => void
+}) {
+  const [draft, setDraft] = useState(value)
+
+  useEffect(() => {
+    setDraft(value)
+  }, [value])
+
+  return (
+    <label className="block text-xs text-zinc-400">
+      {label}
+      <input
+        type="text"
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={() => {
+          if (draft !== value) onCommit(draft)
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault()
+            e.currentTarget.blur()
+          } else if (e.key === 'Escape') {
+            setDraft(value)
+            e.currentTarget.blur()
+          }
+        }}
+        className="mt-1 w-full rounded border border-zinc-700 bg-zinc-900 px-1.5 py-1 text-zinc-100 outline-none focus:border-sky-500"
+      />
+    </label>
+  )
+}
+
 function PropertiesPanel({
   shapes,
   selectedId,
@@ -130,15 +171,11 @@ function PropertiesPanel({
           </div>
 
           {shape.type === 'frame' && (
-            <label className="block text-xs text-zinc-400">
-              Name
-              <input
-                type="text"
-                value={shape.name ?? ''}
-                onChange={(e) => onUpdateShape(shape.id, { name: e.target.value })}
-                className="mt-1 w-full rounded border border-zinc-700 bg-zinc-900 px-1.5 py-1 text-zinc-100 outline-none focus:border-sky-500"
-              />
-            </label>
+            <TextField
+              label="Name"
+              value={shape.name ?? ''}
+              onCommit={(value) => onUpdateShape(shape.id, { name: value })}
+            />
           )}
 
           <div className="grid grid-cols-2 gap-2">
