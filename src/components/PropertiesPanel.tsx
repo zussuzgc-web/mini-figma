@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import type { Shape } from '../types/shape'
 import { SHAPE_LABELS } from '../constants/tools'
 
@@ -15,11 +16,71 @@ interface PropertiesPanelProps {
 }
 
 const GEOMETRY_KEYS = [
-  ['X', 'x'],
-  ['Y', 'y'],
-  ['W', 'width'],
-  ['H', 'height'],
+  { label: 'X', key: 'x', min: null },
+  { label: 'Y', key: 'y', min: null },
+  { label: 'W', key: 'width', min: 1 },
+  { label: 'H', key: 'height', min: 1 },
 ] as const
+
+const FIELD_CLASS = 'w-full rounded border border-zinc-700 bg-zinc-900 px-1.5 py-1 text-zinc-100 outline-none focus:border-sky-500'
+
+/**
+ * Number input with a local draft: history is written once on commit
+ * (blur/Enter) instead of on every keystroke.
+ */
+function NumberField({
+  label,
+  value,
+  min,
+  onCommit,
+  inputClassName,
+}: {
+  label: string
+  value: number
+  min?: number
+  onCommit: (value: number) => void
+  inputClassName?: string
+}) {
+  const [draft, setDraft] = useState(() => String(Math.round(value)))
+
+  useEffect(() => {
+    setDraft(String(Math.round(value)))
+  }, [value])
+
+  const commit = () => {
+    const parsed = Number(draft)
+    if (draft.trim() === '' || !Number.isFinite(parsed)) {
+      setDraft(String(Math.round(value)))
+      return
+    }
+    const next = min === undefined ? parsed : Math.max(min, parsed)
+    setDraft(String(next))
+    onCommit(next)
+  }
+
+  return (
+    <label className="flex items-center gap-1.5 text-xs text-zinc-400">
+      <span>{label}</span>
+      <input
+        type="number"
+        value={draft}
+        min={min}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault()
+            e.currentTarget.blur()
+          } else if (e.key === 'Escape') {
+            setDraft(String(Math.round(value)))
+            e.currentTarget.blur()
+          }
+        }}
+        className={inputClassName}
+      />
+    </label>
+  )
+}
 
 function PropertiesPanel({
   shapes,
@@ -81,18 +142,17 @@ function PropertiesPanel({
           )}
 
           <div className="grid grid-cols-2 gap-2">
-            {GEOMETRY_KEYS.map(([label, key]) => (
-              <label key={key} className="flex items-center gap-1.5 text-xs text-zinc-400">
-                <span>{label}</span>
-                <input
-                  type="number"
-                  value={Math.round(shape[key])}
-                  onChange={(e) =>
-                    onUpdateShape(shape.id, { [key]: Number(e.target.value) } as Partial<Shape>)
-                  }
-                  className="w-full rounded border border-zinc-700 bg-zinc-900 px-1.5 py-1 text-zinc-100 outline-none focus:border-sky-500"
-                />
-              </label>
+            {GEOMETRY_KEYS.map(({ label, key, min }) => (
+              <NumberField
+                key={key}
+                label={label}
+                value={shape[key]}
+                min={min ?? undefined}
+                onCommit={(value) =>
+                  onUpdateShape(shape.id, { [key]: value } as Partial<Shape>)
+                }
+                inputClassName={FIELD_CLASS}
+              />
             ))}
           </div>
 
@@ -134,18 +194,13 @@ function PropertiesPanel({
                 onChange={(e) => onUpdateShape(shape.id, { stroke: e.target.value, strokeWidth: 1 })}
                 className="h-8 w-10 cursor-pointer rounded border border-zinc-700 bg-zinc-900 p-0.5"
               />
-              <label className="flex items-center gap-1.5 text-xs text-zinc-400">
-                Width
-                <input
-                  type="number"
-                  min={0}
-                  value={shape.strokeWidth}
-                  onChange={(e) =>
-                    onUpdateShape(shape.id, { strokeWidth: Math.max(0, Number(e.target.value)) })
-                  }
-                  className="w-16 rounded border border-zinc-700 bg-zinc-900 px-1.5 py-1 text-zinc-100 outline-none focus:border-sky-500"
-                />
-              </label>
+              <NumberField
+                label="Width"
+                value={shape.strokeWidth}
+                min={0}
+                onCommit={(value) => onUpdateShape(shape.id, { strokeWidth: value })}
+                inputClassName="w-16 rounded border border-zinc-700 bg-zinc-900 px-1.5 py-1 text-zinc-100 outline-none focus:border-sky-500"
+              />
             </div>
           </div>
 
