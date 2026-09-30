@@ -1,5 +1,5 @@
-import { useRef } from 'react'
-import type { PointerEvent, WheelEvent } from 'react'
+import { useEffect, useRef } from 'react'
+import type { PointerEvent } from 'react'
 import type { Camera, Point, Shape, ShapeType, Size, Tool } from '../types/shape'
 import { DRAFT_ID } from '../hooks/useShapes'
 import { screenToCanvas } from '../utils/geometry'
@@ -190,8 +190,7 @@ export default function Canvas(props: CanvasProps) {
     else endDrawing()
   }
 
-  const onWheel = (e: WheelEvent<HTMLDivElement>) => {
-    e.preventDefault()
+  const onWheel = (e: { clientX: number; clientY: number; deltaY: number; shiftKey: boolean }) => {
     const { screen } = toCanvas(e)
     if (e.shiftKey) {
       scrollBy(-e.deltaY, 0)
@@ -199,6 +198,27 @@ export default function Canvas(props: CanvasProps) {
     }
     zoomAt(screen, Math.exp(-e.deltaY * 0.001))
   }
+
+  /**
+   * React registers wheel/touch listeners as passive on the root container, so
+   * preventDefault inside onWheel is a no-op and logs
+   * "Unable to preventDefault inside passive event listener invocation".
+   * Bind a non-passive native listener instead so page zoom and scroll are
+   * actually suppressed.
+   */
+  const wheelRef = useRef(onWheel)
+  wheelRef.current = onWheel
+
+  useEffect(() => {
+    const surface = surfaceRef.current
+    if (!surface) return
+    const handler = (e: globalThis.WheelEvent) => {
+      e.preventDefault()
+      wheelRef.current(e)
+    }
+    surface.addEventListener('wheel', handler, { passive: false })
+    return () => surface.removeEventListener('wheel', handler)
+  }, [])
 
   const onDoubleClick = () => {
     const rect = surfaceRef.current?.getBoundingClientRect()
@@ -276,7 +296,6 @@ export default function Canvas(props: CanvasProps) {
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
-      onWheel={onWheel}
       onDoubleClick={onDoubleClick}
       title="Double-click — fit all"
     >
