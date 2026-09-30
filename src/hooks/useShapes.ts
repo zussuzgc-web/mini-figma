@@ -102,30 +102,6 @@ export function useShapes() {
     syncHistoryFlags(pastRef.current.length, futureRef.current.length)
   }, [keepSelection, syncHistoryFlags])
 
-  const addShape = useCallback(
-    (type: ShapeType, origin: Point, size: Size, parentId?: string | null): Shape => {
-      const shape: Shape = {
-        id: nextId(),
-        type,
-        x: origin.x,
-        y: origin.y,
-        width: size.width,
-        height: size.height,
-        fill: defaultFill(type),
-        stroke: type === 'frame' ? '#818cf8' : null,
-        strokeWidth: type === 'frame' ? 1 : 0,
-        parentId: parentId ?? null,
-        src: undefined,
-        name: defaultName(type),
-      }
-      pushHistory(shapesRef.current)
-      setShapes((prev) => [...prev, shape])
-      setSelectedId(shape.id)
-      return shape
-    },
-    [pushHistory],
-  )
-
   const insertImage = useCallback(
     (src: string, origin: Point, size: Size, parentId?: string | null): Shape => {
       const shape: Shape = {
@@ -273,7 +249,6 @@ export function useShapes() {
     draft,
     canUndo,
     canRedo,
-    addShape,
     insertImage,
     updateShape,
     removeShape,
