@@ -237,8 +237,9 @@ export function useShapes() {
       const dy = next.y - (base.get(state.id)?.y ?? next.y)
       setShapes((prev) =>
         prev.map((s) => {
-          if (!ids.has(s.id)) return s
-          return { ...s, x: s.x + dx, y: s.y + dy }
+          const origin = base.get(s.id)
+          if (!ids.has(s.id) || !origin) return s
+          return { ...s, x: origin.x + dx, y: origin.y + dy }
         }),
       )
     },
