@@ -8,6 +8,20 @@
       name="description"
       content="Figma для вашего компьютера: полноценный редактор как отдельное приложение — ваши шрифты, работа без сети, несколько окон."
     />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Скачать Figma для компьютера" />
+    <meta
+      property="og:description"
+      content="Полноценный редактор как отдельное приложение: шрифты с вашего компьютера, работа без сети и несколько окон."
+    />
+    <meta
+      property="og:url"
+      content="https://zussuzgc-web.github.io/mini-figma/download/"
+    />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%2318181b'/%3E%3Crect x='7' y='7' width='12' height='12' rx='2' fill='%2338bdf8'/%3E%3Ccircle cx='21' cy='21' r='6' fill='%23a78bfa'/%3E%3C/svg%3E"
+    />
     <title>Скачать Figma для компьютера</title>
     <style>
       :root {
@@ -28,7 +42,6 @@
 
         --title1: 2.25rem;
         --title2: 2rem;
-        --title3: 1.5rem;
         --body-xl: 1.125rem;
         --body: 0.9375rem;
         --caption: 0.8125rem;
@@ -58,7 +71,6 @@
         :root {
           --title1: 3.5rem;
           --title2: 2.75rem;
-          --title3: 1.875rem;
           --body-xl: 1.5rem;
           --body: 1rem;
           --badge: 0.875rem;
@@ -87,6 +99,25 @@
       a {
         color: inherit;
         text-decoration: none;
+      }
+
+      :focus-visible {
+        outline: 2px solid var(--fg);
+        outline-offset: 2px;
+        border-radius: var(--radius-8);
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.001ms !important;
+          transition-duration: 0.001ms !important;
+        }
       }
 
       .wrap {
@@ -145,6 +176,42 @@
         color: var(--fg);
       }
 
+      .menu-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.5rem;
+        height: 2.5rem;
+        border: 0;
+        background: transparent;
+        color: var(--fg);
+        cursor: pointer;
+        border-radius: var(--radius-8);
+      }
+
+      .menu-toggle:hover {
+        background: var(--card-bg);
+      }
+
+      @media (max-width: 899px) {
+        .main-nav {
+          position: absolute;
+          top: 100%;
+          left: 0;
+          right: 0;
+          flex-direction: column;
+          gap: var(--space-16);
+          background: var(--bg);
+          border-bottom: 1px solid var(--border);
+          padding: var(--space-16) var(--space-24) var(--space-24);
+          box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.08);
+        }
+
+        .main-nav.is-open {
+          display: flex;
+        }
+      }
+
       .header-actions {
         display: flex;
         align-items: center;
@@ -163,6 +230,17 @@
       @media (min-width: 900px) {
         .main-nav {
           display: flex;
+        }
+
+        .menu-toggle {
+          display: none;
+        }
+      }
+
+      @media (max-width: 640px) {
+        .header-actions .login,
+        .header-actions .btn-secondary {
+          display: none;
         }
       }
 
@@ -285,7 +363,7 @@
 
       .hero h1 {
         font-size: var(--title1);
-        line-height: 1;
+        line-height: 1.05;
         letter-spacing: -0.03em;
         margin: var(--space-16) 0 var(--space-24);
         font-weight: 450;
@@ -464,6 +542,11 @@
       }
 
       /* ---------- Compare table ---------- */
+      .table-scroll {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
       .compare-table {
         width: 100%;
         border-collapse: collapse;
@@ -487,10 +570,6 @@
       .compare-table td:not(:first-child) {
         text-align: center;
         width: 7rem;
-      }
-
-      .compare-table td:first-child {
-        color: var(--fg-muted);
       }
 
       .yes {
@@ -631,7 +710,7 @@
     <header class="site-header">
       <div class="wrap">
         <a class="logo" href="#" aria-label="Figma">
-          <svg width="22" height="32" viewBox="0 0 38 57" aria-hidden="true">
+          <svg width="22" height="33" viewBox="0 0 38 57" aria-hidden="true">
             <path d="M19 28.5a9.5 9.5 0 1 1 19 0 9.5 9.5 0 0 1-19 0Z" fill="#24CB71" />
             <path d="M0 47.5A9.5 9.5 0 0 1 9.5 38H19v9.5a9.5 9.5 0 1 1-19 0Z" fill="#FF3737" />
             <path d="M19 0v19h9.5a9.5 9.5 0 1 0 0-19H19Z" fill="#FF7237" />
@@ -641,7 +720,19 @@
           <span>Figma</span>
         </a>
 
-        <nav class="main-nav" aria-label="Main">
+        <button
+          class="menu-toggle"
+          type="button"
+          aria-label="Открыть меню"
+          aria-expanded="false"
+          aria-controls="site-nav"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+          </svg>
+        </button>
+
+        <nav class="main-nav" id="site-nav" aria-label="Main">
           <a href="#">Продукты</a>
           <a href="#">Решения</a>
           <a href="#">Ресурсы</a>
@@ -683,7 +774,7 @@
                     stroke-linejoin="round"
                   />
                 </svg>
-                <span>Скачать приложение</span>
+                <span class="os-label">Скачать приложение</span>
               </a>
             </div>
             <div class="platforms">
@@ -697,12 +788,12 @@
           <div class="hero-visual">
             <span class="glow" aria-hidden="true"></span>
             <!-- Placeholder: editor window -->
-            <svg class="mock" viewBox="0 0 640 420" role="img" aria-label="Заглушка: полноэкранный редактор">
+            <svg class="mock" viewBox="0 0 640 420" role="img" aria-label="Полноэкранный редактор">
               <rect width="640" height="420" fill="#fff" />
               <rect x="0" y="0" width="640" height="40" fill="#f7f7f8" />
-              <circle cx="20" cy="20" r="5" fill="var(--brand-red)" />
-              <circle cx="38" cy="20" r="5" fill="var(--brand-orange)" />
-              <circle cx="56" cy="20" r="5" fill="var(--brand-green)" />
+              <circle cx="20" cy="20" r="5" fill="#FF3737" />
+              <circle cx="38" cy="20" r="5" fill="#FF7237" />
+              <circle cx="56" cy="20" r="5" fill="#24CB71" />
               <rect x="120" y="12" width="120" height="16" rx="8" fill="#e6e6e9" />
               <rect x="0" y="40" width="120" height="380" fill="#fafafa" />
               <rect x="12" y="56" width="90" height="12" rx="4" fill="#e0e0e3" />
@@ -714,9 +805,9 @@
               <rect x="512" y="80" width="110" height="24" rx="6" fill="#efeff1" />
               <rect x="512" y="116" width="110" height="24" rx="6" fill="#efeff1" />
               <rect x="512" y="152" width="80" height="24" rx="6" fill="#efeff1" />
-              <rect x="180" y="110" width="140" height="100" rx="12" fill="var(--brand-blue)" opacity="0.85" />
-              <circle cx="400" cy="200" r="52" fill="var(--brand-purple)" opacity="0.8" />
-              <rect x="210" y="250" width="180" height="90" rx="12" fill="var(--brand-orange)" opacity="0.85" />
+              <rect x="180" y="110" width="140" height="100" rx="12" fill="#00B6FF" opacity="0.85" />
+              <circle cx="400" cy="200" r="52" fill="#874FFF" opacity="0.8" />
+              <rect x="210" y="250" width="180" height="90" rx="12" fill="#FF7237" opacity="0.85" />
               <rect x="120" y="40" width="380" height="380" fill="none" />
             </svg>
           </div>
@@ -734,7 +825,7 @@
             <div class="step">
               <span class="num">1</span>
               <h3>Скачайте приложение</h3>
-              <p>Выберите версию для своей системы — установщик весит немного.</p>
+              <p>Выберите установщик для своей системы: macOS или Windows.</p>
             </div>
             <div class="step">
               <span class="num">2</span>
@@ -763,7 +854,7 @@
               <span class="icon" aria-hidden="true">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                   <path d="M3 8.5 12 4l9 4.5m-18 0 9 4.5 9-4.5m-18 0V16l9 4.5 9-4.5V8.5" stroke="#000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
-                  <path d="M19 3v4m-2-2h4" stroke="var(--brand-blue)" stroke-width="1.6" stroke-linecap="round" />
+                  <path d="M19 3v4m-2-2h4" stroke="#00B6FF" stroke-width="1.6" stroke-linecap="round" />
                 </svg>
               </span>
               <h3>Работайте без сети</h3>
@@ -790,7 +881,7 @@
                   <rect x="3" y="4" width="8" height="7" rx="1.5" stroke="#000" stroke-width="1.6" />
                   <rect x="13" y="4" width="8" height="7" rx="1.5" stroke="#000" stroke-width="1.6" />
                   <rect x="3" y="13" width="8" height="7" rx="1.5" stroke="#000" stroke-width="1.6" />
-                  <rect x="13" y="13" width="8" height="7" rx="1.5" stroke="var(--brand-purple)" stroke-width="1.6" />
+                  <rect x="13" y="13" width="8" height="7" rx="1.5" stroke="#874FFF" stroke-width="1.6" />
                 </svg>
               </span>
               <h3>Несколько окон</h3>
@@ -813,7 +904,7 @@
           <div class="screens-grid">
             <div class="screen">
               <figure>
-                <svg class="mock" viewBox="0 0 480 300" role="img" aria-label="Заглушка: полноэкранный редактор">
+                <svg class="mock" viewBox="0 0 480 300" role="img" aria-label="Полноэкранный редактор">
                   <rect width="480" height="300" fill="#fff" />
                   <rect width="480" height="32" fill="#f7f7f8" />
                   <rect x="12" y="10" width="60" height="12" rx="6" fill="#e6e6e9" />
@@ -825,16 +916,16 @@
                   <rect x="382" y="46" width="50" height="9" rx="4" fill="#e6e6e9" />
                   <rect x="382" y="66" width="86" height="20" rx="6" fill="#efeff1" />
                   <rect x="382" y="96" width="86" height="20" rx="6" fill="#efeff1" />
-                  <rect x="130" y="80" width="110" height="80" rx="10" fill="var(--brand-blue)" opacity="0.85" />
-                  <circle cx="300" cy="150" r="40" fill="var(--brand-purple)" opacity="0.8" />
-                  <rect x="150" y="190" width="130" height="70" rx="10" fill="var(--brand-orange)" opacity="0.85" />
+                  <rect x="130" y="80" width="110" height="80" rx="10" fill="#00B6FF" opacity="0.85" />
+                  <circle cx="300" cy="150" r="40" fill="#874FFF" opacity="0.8" />
+                  <rect x="150" y="190" width="130" height="70" rx="10" fill="#FF7237" opacity="0.85" />
                 </svg>
                 <figcaption>Полноэкранный редактор</figcaption>
               </figure>
             </div>
             <div class="screen">
               <figure>
-                <svg class="mock" viewBox="0 0 480 300" role="img" aria-label="Заглушка: панель слоёв и инспектор">
+                <svg class="mock" viewBox="0 0 480 300" role="img" aria-label="Панель слоёв и инспектор">
                   <rect width="480" height="300" fill="#fff" />
                   <rect x="0" y="0" width="180" height="300" fill="#fafafa" />
                   <rect x="16" y="20" width="80" height="12" rx="6" fill="#e6e6e9" />
@@ -848,24 +939,24 @@
                   <rect x="220" y="64" width="200" height="26" rx="6" fill="#f1f1f3" />
                   <rect x="220" y="102" width="200" height="26" rx="6" fill="#f1f1f3" />
                   <rect x="220" y="140" width="120" height="26" rx="6" fill="#f1f1f3" />
-                  <rect x="220" y="190" width="200" height="70" rx="10" fill="var(--brand-purple)" opacity="0.15" />
+                  <rect x="220" y="190" width="200" height="70" rx="10" fill="#874FFF" opacity="0.15" />
                 </svg>
                 <figcaption>Панель слоёв и инспектор</figcaption>
               </figure>
             </div>
             <div class="screen">
               <figure>
-                <svg class="mock" viewBox="0 0 480 300" role="img" aria-label="Заглушка: работа без сети">
+                <svg class="mock" viewBox="0 0 480 300" role="img" aria-label="Работа без сети">
                   <rect width="480" height="300" fill="#fff" />
                   <rect width="480" height="32" fill="#f7f7f8" />
                   <rect x="360" y="8" width="108" height="16" rx="8" fill="#fff3e6" stroke="#ffd9b3" />
-                  <circle cx="372" cy="16" r="4" fill="var(--brand-orange)" />
+                  <circle cx="372" cy="16" r="4" fill="#FF7237" />
                   <rect x="382" y="12" width="70" height="8" rx="4" fill="#f0b27a" />
                   <rect y="32" width="90" height="268" fill="#fafafa" />
                   <rect x="12" y="46" width="60" height="10" rx="4" fill="#e6e6e9" />
-                  <rect x="130" y="90" width="130" height="90" rx="10" fill="var(--brand-green)" opacity="0.35" />
-                  <circle cx="330" cy="150" r="44" fill="var(--brand-blue)" opacity="0.3" />
-                  <rect x="150" y="200" width="150" height="70" rx="10" fill="var(--brand-purple)" opacity="0.25" />
+                  <rect x="130" y="90" width="130" height="90" rx="10" fill="#24CB71" opacity="0.35" />
+                  <circle cx="330" cy="150" r="44" fill="#00B6FF" opacity="0.3" />
+                  <rect x="150" y="200" width="150" height="70" rx="10" fill="#874FFF" opacity="0.25" />
                   <rect x="0" y="256" width="480" height="44" fill="#f7f7f8" />
                   <rect x="16" y="270" width="240" height="12" rx="6" fill="#dcdce0" />
                 </svg>
@@ -874,14 +965,14 @@
             </div>
             <div class="screen">
               <figure>
-                <svg class="mock" viewBox="0 0 480 300" role="img" aria-label="Заглушка: окно плагинов">
+                <svg class="mock" viewBox="0 0 480 300" role="img" aria-label="Окно плагинов">
                   <rect width="480" height="300" fill="#fff" />
                   <rect x="120" y="40" width="240" height="220" rx="16" fill="#fff" stroke="#e6e6e9" />
                   <rect x="140" y="60" width="90" height="12" rx="6" fill="#e6e6e9" />
-                  <rect x="140" y="90" width="80" height="60" rx="10" fill="var(--brand-blue)" opacity="0.25" />
-                  <rect x="232" y="90" width="80" height="60" rx="10" fill="var(--brand-purple)" opacity="0.25" />
-                  <rect x="140" y="162" width="80" height="60" rx="10" fill="var(--brand-green)" opacity="0.25" />
-                  <rect x="232" y="162" width="80" height="60" rx="10" fill="var(--brand-orange)" opacity="0.25" />
+                  <rect x="140" y="90" width="80" height="60" rx="10" fill="#00B6FF" opacity="0.25" />
+                  <rect x="232" y="90" width="80" height="60" rx="10" fill="#874FFF" opacity="0.25" />
+                  <rect x="140" y="162" width="80" height="60" rx="10" fill="#24CB71" opacity="0.25" />
+                  <rect x="232" y="162" width="80" height="60" rx="10" fill="#FF7237" opacity="0.25" />
                 </svg>
                 <figcaption>Окно плагинов и ресурсов</figcaption>
               </figure>
@@ -898,7 +989,8 @@
             <h2 id="compare-title">Браузер или приложение</h2>
             <p>Приложение не заменяет браузер — оно расширяет его там, где важны детали.</p>
           </div>
-          <table class="compare-table">
+          <div class="table-scroll">
+            <table class="compare-table">
             <thead>
               <tr>
                 <th scope="col">Возможность</th>
@@ -928,7 +1020,8 @@
                 <td><span class="yes">✓</span></td>
               </tr>
             </tbody>
-          </table>
+            </table>
+          </div>
         </div>
       </section>
 
@@ -956,7 +1049,7 @@
                   <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
                 </svg>
               </summary>
-              <div class="answer">Установщик небольшой — скачивается быстро и не занимает много места на диске.</div>
+              <div class="answer">Вес установщика и объём на диске зависят от версии и платформы.</div>
             </details>
             <details>
               <summary>
@@ -997,12 +1090,11 @@
             <svg class="arrow" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="M12 3v12m0 0 5-5m-5 5-5-5M5 21h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
-            <span>Скачать приложение</span>
+            <span class="os-label">Скачать приложение</span>
           </a>
           <p class="reqs">
             <span>macOS 12+</span>
             <span>Windows 10+</span>
-            <span>Установщик небольшой</span>
           </p>
         </div>
       </section>
@@ -1061,7 +1153,7 @@
           </div>
         </div>
         <div class="footer-base">
-          <span>Демонстрационная страница. Все ссылки декоративные.</span>
+          <span>© Figma, 2026</span>
           <span>Русский</span>
         </div>
       </div>
@@ -1069,14 +1161,32 @@
 
     <script>
       (function () {
-        // Декоративные ссылки скачивания — ничего не делают.
+        // Декоративные ссылки — ничего не делают.
         document.querySelectorAll("[data-decorative], .platforms a").forEach(function (el) {
           el.addEventListener("click", function (e) {
             e.preventDefault();
           });
         });
 
-        // Клиентское определение ОС — только подпись кнопки, без реальных ссылок.
+        // Мобильное меню в шапке.
+        var toggle = document.querySelector(".menu-toggle");
+        var nav = document.getElementById("site-nav");
+        if (toggle && nav) {
+          toggle.addEventListener("click", function () {
+            var open = nav.classList.toggle("is-open");
+            toggle.setAttribute("aria-expanded", String(open));
+            toggle.setAttribute("aria-label", open ? "Закрыть меню" : "Открыть меню");
+          });
+          nav.addEventListener("click", function (e) {
+            if (e.target.closest("a")) {
+              nav.classList.remove("is-open");
+              toggle.setAttribute("aria-expanded", "false");
+              toggle.setAttribute("aria-label", "Открыть меню");
+            }
+          });
+        }
+
+        // Клиентское определение ОС — только подпись кнопок, без реальных ссылок.
         function detectOS() {
           var platform =
             (navigator.userAgentData && navigator.userAgentData.platform) ||
@@ -1092,8 +1202,9 @@
 
         var os = detectOS();
         if (os) {
-          var label = document.querySelector("#download-primary span");
-          if (label) label.textContent = "Скачать для " + os;
+          document.querySelectorAll(".os-label").forEach(function (label) {
+            label.textContent = "Скачать для " + os;
+          });
         }
       })();
     </script>
